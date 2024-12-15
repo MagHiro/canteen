@@ -1,0 +1,132 @@
+{% extends 'base/base.html' %}
+{% block title %}Your Cart{% endblock title %}
+{% block maincontent %}
+
+    {% if cartitems %}
+        <div class="row border rounded-5 border-primary m-5 p-4 bg-light shadow-lg">
+            <div class="col-md-8">
+                {% for item in cartitems %}
+                    <div class="card mb-4 border-0 shadow-sm rounded-4">
+                        <div class="row g-0">
+                            <div class="col-md-4">
+                                <img src="{{item.food.image.url}}" class="img-fluid rounded-start" style="height:180px; width:220px; object-fit: cover;">
+                            </div>
+                            <div class="col-md-8">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="card-title fw-bold">{{item.food.name | title}}</h5>
+                                            <p class="card-text text-muted small">{{item.food.description | title}}</p>
+                                        </div>
+                                        <a class="btn btn-outline-danger btn-sm" href="{% url 'update-cart' item.food.id %}?name=delete_cart_item">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </a>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-4">
+                                        <div class="text-center">
+                                            <h6 class="fw-semibold mb-1">Price</h6>
+                                            <p class="text-primary">${{item.food.price}}</p>
+                                        </div>
+                                        <div class="text-center">
+                                            <h6 class="fw-semibold mb-1">Quantity</h6>
+                                            <div class="d-flex align-items-center">
+                                                {% if item.quantity == 1 %}
+                                                    <a class="btn btn-outline-danger btn-sm" href="{% url 'update-cart' item.food.id %}?name=delete_cart_item">
+                                                        <i class="fa-solid fa-trash"></i>
+                                                    </a>
+                                                {% else %}
+                                                    <a class="btn btn-outline-warning btn-sm" href="{% url 'update-cart' item.food.id %}?name=decrease_cart">
+                                                        <i class="fa-solid fa-minus"></i>
+                                                    </a>
+                                                {% endif %}
+                                                <span class="mx-2">{{item.quantity}}</span>
+                                                <a class="btn btn-outline-primary btn-sm" href="{% url 'update-cart' item.food.id %}?name=increase_cart">
+                                                    <i class="fa-solid fa-plus"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="text-center">
+                                            <h6 class="fw-semibold mb-1">Amount</h6>
+                                            <p class="text-success">${% widthratio item.food.price 1 item.quantity %}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+                    <div class="card-body">
+                        <h4 class="fw-bold border-bottom pb-2">Summary</h4>
+                        <ul class="list-group list-group-flush">
+                            {% for item in cartitems %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <span>{{item.food.name}}</span>
+                                    <span>${% widthratio item.food.price 1 item.quantity %}</span>
+                                </li>
+                            {% endfor %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center border-top pt-3">
+                                <strong>Total</strong>
+                                <strong>${{total_amount}}</strong>
+                            </li>
+                        </ul>
+                        <div class="mt-4">
+                            <form action="/checkout/" method="post" id="paypalform">
+                                {% csrf_token %}
+                                <input type="hidden" name="paymode" value="Online">
+                                <input type="hidden" name="paygate" value="Paypal">
+                                <div id="paypal-button-container" class="mb-3"></div>
+                            </form>
+                            <form action="/checkout/" method="post" id="cashform">
+                                {% csrf_token %}
+                                <input type="hidden" name="paymode" value="Cash">
+                                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                                    Pay Cash On Delivery
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-warning text-center mt-3 border border-warning border-2 rounded-3">
+                    <strong>Note:</strong> Collect your order from the canteen when <strong>Status</strong> is <strong>Packed</strong> in <a href="{% url 'my-orders' %}" class="text-decoration-none">My Orders</a> page.
+                </div>
+            </div>
+        </div>
+        <div id="os"></div>
+    {% else %}
+        <h1 class="alert alert-info text-center mt-5">Your Cart is Empty</h1>
+    {% endif %}
+
+{% endblock maincontent %}
+
+{% block payment-gateway %}
+<script src="https://www.paypal.com/sdk/js?client-id=AdstVdkXtBT7eFeAKT1PuFTYmnm3a9HgAeyqXiJtxNKFQJav05K7ljkgv6e1EbefJo_crAAgYXsElPcf&currency=USD"></script>
+<script>
+    paypal.Buttons({
+        createOrder: function(data, actions) {
+            return actions.order.create({
+                purchase_units: [{
+                    amount: {
+                        value: '{{total_amount}}'
+                    }
+                }]
+            });
+        },
+        onApprove: function(data, actions) {
+            return actions.order.capture().then(function(orderData) {
+                var transaction = orderData.purchase_units[0].payments.captures[0];
+                alert('Transaction ' + transaction.status + ': ' + transaction.id + '\n\nOrder Placed Successfully' + '\nClick OK to Proceed Further');
+                var form = document.getElementById('paypalform');
+                var hiddenInput = document.createElement("input");
+                hiddenInput.setAttribute('type', 'hidden');
+                hiddenInput.setAttribute('name', 'tn_id');
+                hiddenInput.setAttribute('value', transaction.id);
+                form.appendChild(hiddenInput);
+                form.submit();
+            });
+        }
+    }).render('#paypal-button-container');
+</script>
+{% endblock payment-gateway %}

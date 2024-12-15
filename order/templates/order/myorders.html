@@ -1,0 +1,115 @@
+{% extends 'base/base.html' %}
+{% block title %}My Orders{% endblock title %}
+{% block maincontent %}
+
+{% if orders %}
+<div class="container my-5">
+  <h2 class="text-center mb-4">My Orders</h2>
+  <table class="table table-hover align-middle text-center">
+    <thead class="table-dark">
+      <tr>
+        <th scope="col">Order Id</th>
+        <th scope="col">Order Date</th>
+        <th scope="col">Amount Paid</th>
+        <th scope="col">Payment Mode</th>
+        <th scope="col">Order Status</th>
+        <th scope="col">Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td>#{{ order.id }}</td>
+        <td>{{ order.order_datetime }}</td>
+        <td>${{ order.total_amount }}</td>
+        <td>{{ order.payment_mode }}</td>
+        <td>
+          <span class="badge
+            {% if order.status == 'Pending' %}bg-secondary
+            {% elif order.status == 'Accepted' %}bg-info
+            {% elif order.status == 'Cooking' %}bg-primary
+            {% elif order.status == 'Packed' %}bg-warning
+            {% elif order.status == 'Completed' %}bg-success
+            {% endif %}
+          ">
+            {{ order.status }}
+          </span>
+          <div class="progress mt-2">
+            <div class="progress-bar progress-bar-striped
+              {% if order.status == 'Pending' %}bg-secondary
+              {% elif order.status == 'Accepted' %}bg-info
+              {% elif order.status == 'Cooking' %}bg-primary
+              {% elif order.status == 'Packed' %}bg-warning
+              {% elif order.status == 'Completed' %}bg-success
+              {% endif %}
+            " role="progressbar"
+            style="width: {% if order.status == 'Pending' %}20{% elif order.status == 'Accepted' %}40{% elif order.status == 'Cooking' %}60{% elif order.status == 'Packed' %}80{% elif order.status == 'Completed' %}100{% endif %}%"
+            aria-valuenow="{% if order.status == 'Pending' %}20{% elif order.status == 'Accepted' %}40{% elif order.status == 'Cooking' %}60{% elif order.status == 'Packed' %}80{% elif order.status == 'Completed' %}100{% endif %}"
+            aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </td>
+        <td>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#orderDetails{{ order.id }}">
+            <i class="bi bi-info-circle"></i> View
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% for order in orders %}
+<div class="modal fade" id="orderDetails{{ order.id }}" tabindex="-1" aria-labelledby="orderDetailsLabel{{ order.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow-lg">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title" id="orderDetailsLabel{{ order.id }}">Order #{{ order.id }} Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Order Date:</strong> {{ order.order_datetime }}</p>
+        <p><strong>Total Paid:</strong> ${{ order.total_amount }}</p>
+        <p><strong>Transaction ID:</strong> {{ order.transaction_id }}</p>
+        <p><strong>Payment Mode:</strong> {{ order.payment_mode }}</p>
+        <p><strong>Payment Gateway:</strong> {{ order.payment_gateway }}</p>
+        <p><strong>Status:</strong> {{ order.status }}</p>
+        <hr>
+        <h5>Your Order Items</h5>
+        <table class="table table-bordered table-sm">
+          <thead class="table-light">
+            <tr>
+              <th>Food</th>
+              <th>Price</th>
+              <th>Quantity</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in order_items %}
+            {% if item.order.id == order.id %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>${{ item.price }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>${{ item.item_total }}</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="text-center mt-5">
+  <h4 class="alert alert-info">You have not placed any orders yet.</h4>
+</div>
+{% endif %}
+
+{% endblock maincontent %}
